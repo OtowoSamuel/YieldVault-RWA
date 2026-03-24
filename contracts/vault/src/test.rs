@@ -3,6 +3,7 @@
 use super::*;
 use soroban_sdk::testutils::{Address as _};
 use soroban_sdk::{token, Address, Env};
+use crate::benji_strategy::{BenjiStrategy, BenjiStrategyClient};
 
 fn create_token_contract<'a>(e: &Env, admin: &Address) -> token::Client<'a> {
     let token_address = e.register_stellar_asset_contract_v2(admin.clone()).address();
@@ -10,7 +11,69 @@ fn create_token_contract<'a>(e: &Env, admin: &Address) -> token::Client<'a> {
 }
 
 #[test]
-fn test_vault_flow() {
+fn test_vault_with_benji_strategy() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let admin = Address::generate(&env);
+    let user = Address::generate(&env);
+
+    // Setup USDC (Underlying Asset)
+    let token_admin = Address::generate(&env);
+    let usdc = create_token_contract(&env, &token_admin);
+    let usdc_admin_client = token::StellarAssetClient::new(&env, &usdc.address);
+    usdc_admin_client.mint(&user, &1000);
+
+    // Setup BENJI Token (Strategy Asset)
+    let benji_token = create_token_contract(&env, &token_admin);
+    let benji_admin_client = token::StellarAssetClient::new(&env, &benji_token.address);
+
+    // Register Contracts
+    let vault_id = env.register(YieldVault, ());
+    let vault = YieldVaultClient::new(&env, &vault_id);
+    
+    let strategy_id = env.register(BenjiStrategy, ());
+    let strategy = BenjiStrategyClient::new(&env, &strategy_id);
+
+    // 1. Initialize
+    vault.initialize(&admin, &usdc.address);
+    strategy.initialize(&vault_id, &usdc.address, &benji_token.address);
+    vault.set_strategy(&strategy_id);
+
+    // 2. User Deposits 100 USDC
+    vault.deposit(&user, &100);
+    assert_eq!(vault.total_assets(), 100);
+    assert_eq!(usdc.balance(&vault_id), 100);
+    assert_eq!(strategy.total_value(), 0);
+
+    // 3. Invest 60 USDC into BENJI Strategy
+    vault.invest(&60);
+    assert_eq!(usdc.balance(&vault_id), 40);
+    assert_eq!(usdc.balance(&strategy_id), 60);
+    
+    // In our mock, strategy value depends on BENJI tokens held by contract
+    // Let's simulate the strategy contract "buying" BENJI tokens
+    benji_admin_client.mint(&strategy_id, &60);
+    assert_eq!(strategy.total_value(), 60);
+    assert_eq!(vault.total_assets(), 100); // 40 idle + 60 in strategy
+
+    // 4. Yield Accrues in BENJI (Daily return)
+    benji_admin_client.mint(&strategy_id, &6); // 10% yield
+    assert_eq!(strategy.total_value(), 66);
+    assert_eq!(vault.total_assets(), 106); // 40 idle + 66 in strategy
+
+    // 5. User Withdraws some shares. 
+    // Vault has 40 idle assets, but user wants to withdraw 50 shares (value ~53 USDC)
+    // This should trigger an internal divestment
+    let withdrawn = vault.withdraw(&user, &50);
+    assert_eq!(withdrawn, 53); // 50 shares * 106 assets / 100 shares = 53
+    
+    assert_eq!(vault.total_shares(), 50);
+    assert_eq!(vault.total_assets(), 53);
+}
+
+#[test]
+fn test_vault_flow_legacy() {
     let env = Env::default();
     env.mock_all_auths();
 
