@@ -143,6 +143,84 @@ button {
 .gap-lg { gap: 24px; }
 .gap-xl { gap: 32px; }
 
+/* Vault dashboard: two columns on desktop; stacked on narrow viewports */
+.vault-dashboard {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-areas:
+    "stats actions"
+    "chart actions";
+  align-items: start;
+}
+
+.vault-dashboard-stats {
+  grid-area: stats;
+  min-width: 0;
+}
+
+.vault-dashboard-chart {
+  grid-area: chart;
+  min-width: 0;
+}
+
+.vault-dashboard-actions {
+  grid-area: actions;
+  min-width: 0;
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+}
+
+.vault-dashboard-actions > .glass-panel {
+  flex: 1;
+}
+
+.vault-chart-panel {
+  padding: 24px 32px;
+}
+
+.vault-chart-canvas {
+  width: 100%;
+  height: min(40vw, 320px);
+  min-height: 220px;
+}
+
+@media (max-width: 768px) {
+  .vault-dashboard {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "stats"
+      "actions"
+      "chart";
+  }
+
+  .vault-stats-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  .vault-stats-header > div:last-child {
+    align-self: stretch;
+    text-align: left;
+  }
+
+  .vault-stats-meta {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 20px;
+  }
+
+  .vault-chart-panel {
+    padding: 20px 16px;
+  }
+
+  .vault-chart-canvas {
+    height: clamp(200px, 58vw, 280px);
+    min-height: 200px;
+  }
+}
+
 /* Gradients & Text Effects */
 .text-gradient {
   background: linear-gradient(90deg, var(--accent-cyan), var(--accent-purple));

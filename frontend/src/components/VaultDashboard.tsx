@@ -3,6 +3,7 @@ import { Activity, ShieldCheck, TrendingUp, Wallet as WalletIcon } from "./icons
 import { hasCustomRpcConfig, networkConfig } from "../config/network";
 import { useVault } from "../context/VaultContext";
 import ApiStatusBanner from "./ApiStatusBanner";
+import VaultPerformanceChart from "./VaultPerformanceChart";
 import { useToast } from "../context/ToastContext";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "./Tabs";
 import { FormField, SubmitButton, useForm, type ValidationSchema } from "../forms";
@@ -88,14 +89,13 @@ const VaultDashboard: React.FC<VaultDashboardProps> = ({ walletAddress }) => {
     };
 
     return (
-        <div className="flex gap-lg" style={{ flexWrap: 'wrap' }}>
-            {/* Left Column - Vault Stats */}
-            <div style={{ flex: '1 1 500px' }} className="flex flex-col gap-lg">
-
+        <div className="vault-dashboard gap-lg">
+            {/* Stats — grid area: stats */}
+            <div className="vault-dashboard-stats">
                 <div className="glass-panel" style={{ padding: '32px' }}>
                     {error && <ApiStatusBanner error={error} />}
 
-                    <div className="flex justify-between items-center" style={{ marginBottom: '24px' }}>
+                    <div className="vault-stats-header flex justify-between items-center" style={{ marginBottom: '24px' }}>
                         <div>
                             <h2 style={{ fontSize: '1.5rem', marginBottom: '4px' }}>Global RWA Yield Fund</h2>
                             <span className="tag" style={{ background: 'rgba(255, 255, 255, 0.05)', color: 'var(--text-secondary)' }}>
@@ -112,7 +112,7 @@ const VaultDashboard: React.FC<VaultDashboardProps> = ({ walletAddress }) => {
 
                     <div style={{ height: '1px', background: 'var(--border-glass)', margin: '24px 0' }} />
 
-                    <div className="flex gap-xl" style={{ marginBottom: '32px' }}>
+                    <div className="vault-stats-meta flex gap-xl" style={{ marginBottom: '32px' }}>
                         <div>
                             <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                                 Total Value Locked
@@ -151,8 +151,15 @@ const VaultDashboard: React.FC<VaultDashboardProps> = ({ walletAddress }) => {
                 </div>
             </div>
 
-            {/* Right Column - User Interaction */}
-            <div style={{ flex: '1 1 400px' }}>
+            {/* Chart — grid area: chart */}
+            <div className="vault-dashboard-chart">
+                <div className="glass-panel vault-chart-panel">
+                    <VaultPerformanceChart />
+                </div>
+            </div>
+
+            {/* Deposit / withdraw — grid area: actions */}
+            <div className="vault-dashboard-actions">
                 <div className="glass-panel" style={{ padding: '32px', position: 'relative', overflow: 'hidden' }}>
 
                     {/* Decorative Glow */}

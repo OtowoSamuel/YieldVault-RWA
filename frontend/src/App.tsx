@@ -6,6 +6,7 @@ import {
   Navigate,
 } from "react-router-dom";
 import { ThemeProvider } from "./context/ThemeContext";
+import { ToastProvider } from "./context/ToastContext";
 import { VaultProvider } from "./context/VaultContext";
 import { ToastProvider } from "./context/ToastContext";
 import Navbar from "./components/Navbar";
@@ -62,6 +63,8 @@ function App() {
       showDialog
     >
       <ThemeProvider>
+        <ToastProvider>
+          <VaultProvider>
         <VaultProvider>
           <ToastProvider>
             <Router>
@@ -93,6 +96,8 @@ function App() {
                 </main>
               </div>
             </Router>
+          </VaultProvider>
+        </ToastProvider>
           </ToastProvider>
         </VaultProvider>
       </ThemeProvider>
