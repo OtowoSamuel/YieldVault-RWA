@@ -5,6 +5,7 @@ import { useVault } from "../context/VaultContext";
 import ApiStatusBanner from "./ApiStatusBanner";
 import { useToast } from "../context/ToastContext";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "./Tabs";
+import { FormField, SubmitButton, useForm, type ValidationSchema } from "../forms";
 
 interface VaultDashboardProps {
   walletAddress: string | null;
@@ -15,6 +16,8 @@ const VaultDashboard: React.FC<VaultDashboardProps> = ({ walletAddress }) => {
     const toast = useToast();
     const [amount, setAmount] = useState("");
     const [isProcessing, setIsProcessing] = useState<"deposit" | "withdraw" | null>(null);
+    const [activeTab, setActiveTab] = useState<"deposit" | "withdraw">("deposit");
+    const [isProcessing, setIsProcessing] = useState(false);
     const [fakeBalance, setFakeBalance] = useState(1250.5);
 
     const yieldRate = formattedApy;
@@ -23,9 +26,32 @@ const VaultDashboard: React.FC<VaultDashboardProps> = ({ walletAddress }) => {
 
     const handleTransaction = (actionType: "deposit" | "withdraw") => {
         if (!walletAddress || !amount || isNaN(Number(amount))) {
+    const schema: ValidationSchema<{ amount: string }> = {
+        amount: {
+            required: "Enter an amount to continue.",
+            custom: (value) => {
+                const parsed = Number(value);
+                if (Number.isNaN(parsed)) {
+                    return "Enter a valid number.";
+                }
+                if (parsed <= 0) {
+                    return "Amount must be greater than 0.";
+                }
+                return undefined;
+            },
+        },
+    };
+
+    const { values, errors, handleChange, handleBlur, handleSubmit } = useForm(
+        { amount: "" },
+        schema,
+    );
+
+    const handleTransaction = async () => {
+        if (!walletAddress) {
             toast.warning({
-                title: "Enter a valid amount",
-                description: "Choose a wallet and amount before submitting the transaction.",
+                title: "Wallet required",
+                description: "Connect your wallet before submitting a transaction.",
             });
             return;
         }
@@ -38,6 +64,17 @@ const VaultDashboard: React.FC<VaultDashboardProps> = ({ walletAddress }) => {
             if (actionType === "withdraw") setFakeBalance(prev => Math.max(0, prev - value));
             setAmount("");
             setIsProcessing(null);
+
+        setIsProcessing(true);
+
+        // Simulate transaction delay
+        await new Promise<void>((resolve) => {
+            setTimeout(() => {
+            const value = Number(values.amount);
+            if (activeTab === "deposit") setFakeBalance(prev => prev + value);
+            if (activeTab === "withdraw") setFakeBalance(prev => Math.max(0, prev - value));
+            handleChange({ target: { name: "amount", value: "" } } as Parameters<typeof handleChange>[0]);
+            setIsProcessing(false);
             toast.success({
                 title: actionType === "deposit" ? "Deposit queued" : "Withdrawal queued",
                 description:
@@ -45,7 +82,9 @@ const VaultDashboard: React.FC<VaultDashboardProps> = ({ walletAddress }) => {
                         ? `${value.toFixed(2)} USDC has been added to your pending vault activity.`
                         : `${value.toFixed(2)} USDC has been added to your pending withdrawal activity.`,
             });
-        }, 2000);
+            resolve();
+            }, 2000);
+        });
     };
 
     return (
@@ -195,6 +234,43 @@ const VaultDashboard: React.FC<VaultDashboardProps> = ({ walletAddress }) => {
                                 style={{ width: '100%', padding: '16px', fontSize: '1.1rem' }}
                                 onClick={() => handleTransaction('deposit')}
                                 disabled={isProcessing !== null || !amount || Number(amount) <= 0}
+                    <div className="flex justify-between items-center" style={{ marginBottom: '16px' }}>
+                        <div style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+                            Transaction
+                        </div>
+                        <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
+                            Balance: <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{walletAddress ? fakeBalance.toFixed(2) : '0.00'}</span>
+                        </div>
+                    </div>
+
+                    <form onSubmit={handleSubmit(handleTransaction)}>
+                        <div className="input-group" style={{ marginBottom: '24px' }}>
+                            <FormField
+                                label={activeTab === 'deposit' ? 'Amount to deposit' : 'Amount to withdraw'}
+                                name="amount"
+                                type="number"
+                                placeholder="0.00"
+                                value={values.amount}
+                                onChange={handleChange}
+                                onBlur={handleBlur}
+                                error={errors.amount}
+                                style={{ fontSize: '1.25rem', fontFamily: 'var(--font-display)' }}
+                            />
+                        </div>
+
+                        <div className="flex justify-between" style={{ marginBottom: '24px' }}>
+                            <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>Asset: USDC</span>
+                            <button
+                                type="button"
+                                style={{
+                                    color: 'var(--accent-cyan)',
+                                    fontSize: '0.8rem',
+                                    fontWeight: 600,
+                                    background: 'var(--accent-cyan-dim)',
+                                    padding: '4px 10px',
+                                    borderRadius: '6px'
+                                }}
+                                onClick={() => handleChange({ target: { name: 'amount', value: fakeBalance.toString() } } as Parameters<typeof handleChange>[0])}
                             >
                                 {isProcessing === 'deposit' ? 'Processing Transaction...' : 'Approve & Deposit'}
                             </button>
@@ -241,6 +317,34 @@ const VaultDashboard: React.FC<VaultDashboardProps> = ({ walletAddress }) => {
                             </button>
                         </TabsContent>
                     </Tabs>
+                        </div>
+
+                        <div className="glass-panel" style={{ padding: '16px', background: 'var(--bg-muted)', marginBottom: '24px' }}>
+                            <div className="flex justify-between items-center">
+                                <span style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>BENJI Strategy</span>
+                                <span style={{ fontSize: '0.9rem', fontWeight: 500 }}>
+                                    {strategy.status === 'active' ? 'Active' : 'Inactive'}
+                                </span>
+                            </div>
+                            <div className="flex justify-between items-center" style={{ marginTop: '8px' }}>
+                                <span style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Exchange Rate</span>
+                                <span style={{ fontSize: '0.9rem', fontWeight: 500 }}>
+                                    1 yvUSDC = {summary.exchangeRate.toFixed(3)} USDC
+                                </span>
+                            </div>
+                            <div className="flex justify-between items-center" style={{ marginTop: '8px' }}>
+                                <span style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Network Fee</span>
+                                <span style={{ fontSize: '0.9rem', fontWeight: 500 }}>{summary.networkFeeEstimate}</span>
+                            </div>
+                        </div>
+
+                        <SubmitButton
+                            loading={isProcessing}
+                            disabled={!values.amount || Number(values.amount) <= 0}
+                            label={activeTab === 'deposit' ? 'Approve & Deposit' : 'Withdraw Funds'}
+                            loadingLabel="Processing Transaction..."
+                        />
+                    </form>
 
                 </div>
             </div>
