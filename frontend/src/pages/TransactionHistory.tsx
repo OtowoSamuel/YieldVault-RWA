@@ -1,10 +1,8 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { useSearchParams } from "react-router-dom";
 import ApiStatusBanner from "../components/ApiStatusBanner";
 import { DataTable, type DataTableColumn } from "../components/DataTable";
-import { normalizeApiError, type ApiError } from "../lib/api";
 import {
-  getTransactions,
   formatAmount,
   formatTimestamp,
   truncateHash,
@@ -12,6 +10,8 @@ import {
 } from "../lib/transactionApi";
 import { useClientDataTable } from "../hooks/useClientDataTable";
 import { useDataTableState } from "../hooks/useDataTableState";
+import { useTransactionHistory } from "../hooks/useTransactionData";
+import { normalizeApiError } from "../lib/api";
 
 interface TransactionHistoryProps {
   walletAddress: string | null;
@@ -73,9 +73,9 @@ const columns: DataTableColumn<Transaction>[] = [
 const TransactionHistory: React.FC<TransactionHistoryProps> = ({
   walletAddress,
 }) => {
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<ApiError | null>(null);
+  const { data: transactions = [], isLoading, error: queryError } = useTransactionHistory(walletAddress);
+
+  const error = queryError ? normalizeApiError(queryError) : null;
 
   // Task 4.3: Wire useDataTableState for sort, page, pageSize URL persistence
   const { state, setSort, setPage, setPageSize } = useDataTableState({
@@ -95,38 +95,6 @@ const TransactionHistory: React.FC<TransactionHistoryProps> = ({
     nextParams.set("page", "1");
     setSearchParams(nextParams, { replace: true });
   };
-
-  useEffect(() => {
-    if (!walletAddress) {
-      return;
-    }
-
-    let isMounted = true;
-
-    const loadTransactions = async () => {
-      setIsLoading(true);
-
-      try {
-        const data = await getTransactions(walletAddress);
-        if (!isMounted) return;
-        setTransactions(data);
-        setError(null);
-      } catch (unknownError) {
-        if (!isMounted) return;
-        setError(normalizeApiError(unknownError));
-      } finally {
-        if (isMounted) {
-          setIsLoading(false);
-        }
-      }
-    };
-
-    void loadTransactions();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [walletAddress]);
 
   // Apply type filter before passing to useClientDataTable
   const filteredByType =

@@ -1,18 +1,15 @@
-import React, { useEffect, useState } from "react";
+import React, { useMemo } from "react";
 import ApiStatusBanner from "../components/ApiStatusBanner";
 import {
   DataTable,
   type DataTableColumn,
 } from "../components/DataTable";
-import { normalizeApiError, type ApiError } from "../lib/api";
-import {
-  getPortfolioHoldings,
-  type PortfolioHolding,
-} from "../lib/portfolioApi";
+import type { PortfolioHolding } from "../lib/portfolioApi";
 import { useClientDataTable } from "../hooks/useClientDataTable";
 import { useUrlState } from "../hooks/useUrlState";
 import { useServerDataTable } from "../hooks/useServerDataTable";
-import { useToast } from "../context/ToastContext";
+import { usePortfolioHoldings } from "../hooks/usePortfolioData";
+import { normalizeApiError } from "../lib/api";
 
 interface PortfolioProps {
   walletAddress: string | null;
@@ -99,10 +96,9 @@ const columns: DataTableColumn<PortfolioHolding>[] = [
 ];
 
 const Portfolio: React.FC<PortfolioProps> = ({ walletAddress }) => {
-  const toast = useToast();
-  const [holdings, setHoldings] = useState<PortfolioHolding[]>([]);
-  const [error, setError] = useState<ApiError | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const { data: holdings = [], isLoading, error: queryError } = usePortfolioHoldings(walletAddress);
+
+  const error = queryError ? normalizeApiError(queryError) : null;
 
   const { state: urlState, setSearch, setSort, setPage, setPageSize, setFilters, reset } = useUrlState<{ status: string, search: string }>({
     defaultSortBy: "valueUsd",
@@ -118,48 +114,7 @@ const Portfolio: React.FC<PortfolioProps> = ({ walletAddress }) => {
 
   useServerDataTable({ state });
 
-  useEffect(() => {
-    if (!walletAddress) {
-      return;
-    }
-
-    let isMounted = true;
-
-    const loadHoldings = async () => {
-      setIsLoading(true);
-
-      try {
-        const response = await getPortfolioHoldings();
-        if (!isMounted) {
-          return;
-        }
-        setHoldings(response);
-        setError(null);
-      } catch (unknownError) {
-        if (!isMounted) {
-          return;
-        }
-        const nextError = normalizeApiError(unknownError);
-        setError(nextError);
-        toast.error({
-          title: "Portfolio sync failed",
-          description: nextError.userMessage,
-        });
-      } finally {
-        if (isMounted) {
-          setIsLoading(false);
-        }
-      }
-    };
-
-    void loadHoldings();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [toast, walletAddress]);
-
-  const filteredHoldings = React.useMemo(() => {
+  const filteredHoldings = useMemo(() => {
     if (!urlState.filters.status || urlState.filters.status === "all") {
       return holdings;
     }
