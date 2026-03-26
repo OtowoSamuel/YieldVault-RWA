@@ -264,22 +264,6 @@ const Portfolio: React.FC<PortfolioProps> = ({ walletAddress }) => {
                     />
                   </div>
                 </label>
-
-                <label className="input-group" style={{ minWidth: "120px" }}>
-                  <span>Rows</span>
-                  <div className="input-wrapper">
-                    <select
-                      aria-label="Rows per page"
-                      value={state.pageSize}
-                      onChange={(event) => setPageSize(Number(event.target.value))}
-                      className="portfolio-select"
-                    >
-                      <option value={4}>4</option>
-                      <option value={6}>6</option>
-                      <option value={8}>8</option>
-                    </select>
-                  </div>
-                </label>
               </div>
             </div>
 
@@ -313,6 +297,7 @@ const Portfolio: React.FC<PortfolioProps> = ({ walletAddress }) => {
                 totalPages,
               }}
               onPageChange={setPage}
+              onPageSizeChange={setPageSize}
               renderRowDetails={(row) => (
                 <div className="portfolio-row-meta">
                   <span className={`tag ${row.status === "active" ? "cyan" : ""}`}>
