@@ -86,7 +86,7 @@ function LocationDisplay() {
 
 function renderPortfolio(
   initialEntry = "/portfolio",
-  walletAddress: string | null = "GABC123",
+  walletAddress: string | null = "GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
 ) {
   return render(
     <MemoryRouter initialEntries={[initialEntry]}>

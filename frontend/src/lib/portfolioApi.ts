@@ -1,4 +1,5 @@
 import { apiClient } from "./apiClient";
+import { validate, PortfolioQuerySchema } from "./api";
 
 export interface PortfolioHolding {
   id: string;
@@ -14,6 +15,7 @@ export interface PortfolioHolding {
 }
 
 
-export async function getPortfolioHoldings() {
+export async function getPortfolioHoldings(params: unknown) {
+  validate(PortfolioQuerySchema, params, "PortfolioQuery");
   return apiClient.get<PortfolioHolding[]>("/mock-api/portfolio-holdings.json");
 }

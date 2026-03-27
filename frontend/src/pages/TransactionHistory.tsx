@@ -2,7 +2,9 @@ import React, { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import ApiStatusBanner from "../components/ApiStatusBanner";
 import { DataTable, type DataTableColumn } from "../components/DataTable";
+import PageHeader from "../components/PageHeader";
 import { normalizeApiError, type ApiError } from "../lib/api";
+import { normalizeApiError, isValidationError, type ApiError, type ValidationError } from "../lib/api";
 import {
   getTransactions,
   formatAmount,
@@ -76,7 +78,7 @@ const TransactionHistory: React.FC<TransactionHistoryProps> = ({
 }) => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<ApiError | null>(null);
+  const [error, setError] = useState<ApiError | ValidationError | null>(null);
 
   // Task 4.3: Wire useDataTableState for sort, page, pageSize URL persistence
   const { state, setSort, setPage, setPageSize } = useDataTableState({
@@ -108,13 +110,22 @@ const TransactionHistory: React.FC<TransactionHistoryProps> = ({
       setIsLoading(true);
 
       try {
-        const data = await getTransactions(walletAddress);
+        const data = await getTransactions({
+          walletAddress,
+          limit: state.pageSize,
+          order: state.sortDirection,
+          type: txType,
+        });
         if (!isMounted) return;
         setTransactions(data);
         setError(null);
       } catch (unknownError) {
         if (!isMounted) return;
-        setError(normalizeApiError(unknownError));
+        if (isValidationError(unknownError)) {
+          setError(unknownError);
+        } else {
+          setError(normalizeApiError(unknownError));
+        }
       } finally {
         if (isMounted) {
           setIsLoading(false);
@@ -127,13 +138,10 @@ const TransactionHistory: React.FC<TransactionHistoryProps> = ({
     return () => {
       isMounted = false;
     };
-  }, [walletAddress]);
+  }, [walletAddress, state.pageSize, state.sortDirection, txType]);
 
   // Apply type filter before passing to useClientDataTable
-  const filteredByType =
-    txType === "all"
-      ? transactions
-      : transactions.filter((tx) => tx.type === txType);
+  const filteredByType = transactions; // already filtered by API
 
   const { rows, page, totalItems, totalPages } = useClientDataTable({
     rows: filteredByType,
@@ -162,14 +170,32 @@ const TransactionHistory: React.FC<TransactionHistoryProps> = ({
 
   return (
     <div className="glass-panel" style={{ padding: "32px" }}>
-      <header style={{ textAlign: "center", marginBottom: "48px" }}>
-        <h1 style={{ fontSize: "2.5rem", marginBottom: "16px" }}>
-          Transaction <span className="text-gradient">History</span>
-        </h1>
-        <p style={{ color: "var(--text-secondary)", fontSize: "1.1rem" }}>
-          View all your past deposits and withdrawals.
-        </p>
-      </header>
+      <PageHeader
+        title={
+          <>
+            Transaction <span className="text-gradient">History</span>
+          </>
+        }
+        description="View all your past deposits and withdrawals."
+        breadcrumbs={[
+          { label: "Home", href: "/" },
+          { label: "Transactions" },
+        ]}
+        statusChips={
+          walletAddress
+            ? [
+                {
+                  label: `${transactions.length} Total`,
+                  variant: "cyan" as const,
+                },
+                {
+                  label: isLoading ? "Loading..." : "Up to date",
+                  variant: (isLoading ? "warning" : "success") as const,
+                },
+              ]
+            : undefined
+        }
+      />
 
       {!walletAddress ? (
         <div style={{ textAlign: "center", padding: "48px" }}>

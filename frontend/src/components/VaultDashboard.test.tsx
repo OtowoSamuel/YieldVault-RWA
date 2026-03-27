@@ -1,8 +1,17 @@
-import { render, screen, fireEvent, act, waitFor } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import VaultDashboard from "./VaultDashboard";
 import { VaultProvider } from "../context/VaultContext";
 import { ToastProvider } from "../context/ToastContext";
+import * as vaultApi from "../lib/vaultApi";
+
+vi.mock("../lib/vaultApi", async (importOriginal) => {
+  const actual = await importOriginal<typeof vaultApi>();
+  return {
+    ...actual,
+    submitDeposit: vi.fn(),
+  };
+});
 
 const mockSummary = {
   tvl: 12450800,
@@ -96,11 +105,15 @@ describe("VaultDashboard", () => {
   });
 
   it("updates the amount input and processes a deposit", async () => {
-    renderDashboard("GABC123");
+    let resolveSubmit!: () => void;
+    const submitPromise = new Promise<void>((resolve) => {
+      resolveSubmit = resolve;
+    });
+    vi.mocked(vaultApi.submitDeposit).mockReturnValue(submitPromise);
+    
+    renderDashboard("GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
 
     expect(await screen.findByText(/Approve & Deposit/i)).toBeInTheDocument();
-
-    vi.useFakeTimers();
 
     const input = screen.getByPlaceholderText("0.00");
     fireEvent.change(input, { target: { value: "100" } });
@@ -109,18 +122,50 @@ describe("VaultDashboard", () => {
     const button = screen.getByText("Approve & Deposit");
     fireEvent.click(button);
 
-    expect(
-      screen.getByText(/Processing Transaction.../i),
-    ).toBeInTheDocument();
-
-    act(() => {
-      vi.advanceTimersByTime(2000);
+    await waitFor(() => {
+      expect(
+        screen.getByText(/Processing Transaction.../i),
+      ).toBeInTheDocument();
     });
 
-    expect(
-      screen.queryByText(/Processing Transaction.../i),
-    ).not.toBeInTheDocument();
+    // Resolve the mocked API call
+    resolveSubmit();
+
+    // Wait for internal component state update
+    await waitFor(() => {
+        expect(
+          screen.queryByText(/Processing Transaction.../i),
+        ).not.toBeInTheDocument();
+    });
+    
     expect(screen.getByText("1350.50")).toBeInTheDocument();
+  });
+
+  it("fills the input with max allowable amount via MAX button", async () => {
+    renderDashboard("GABC123");
+
+    expect(await screen.findByText(/Approve & Deposit/i)).toBeInTheDocument();
+
+    const maxButton = screen.getByRole("button", { name: "MAX" });
+    fireEvent.click(maxButton);
+    const input = screen.getByPlaceholderText("0.00");
+    expect(input).toHaveValue(1250.5);
+
+    fireEvent.click(screen.getByRole("button", { name: "Withdraw" }));
+    fireEvent.click(maxButton);
+    expect(input).toHaveValue(1250.5);
+  });
+
+  it("prevents transactions above the max allowable amount", async () => {
+    renderDashboard("GABC123");
+
+    expect(await screen.findByText(/Approve & Deposit/i)).toBeInTheDocument();
+
+    const input = screen.getByPlaceholderText("0.00");
+    fireEvent.change(input, { target: { value: "2000" } });
+    fireEvent.click(screen.getByRole("button", { name: "Approve & Deposit" }));
+
+    expect(screen.getByText(/Amount exceeds maximum/i)).toBeInTheDocument();
   });
 
   it("shows a normalized API error message when data loading fails", async () => {

@@ -4,6 +4,8 @@ import {
   DataTable,
   type DataTableColumn,
 } from "../components/DataTable";
+import PageHeader from "../components/PageHeader";
+import { normalizeApiError, isValidationError, type ApiError, type ValidationError } from "../lib/api";
 import CopyButton from "../components/CopyButton";
 import { normalizeApiError, type ApiError } from "../lib/api";
 import {
@@ -114,7 +116,7 @@ const columns: DataTableColumn<PortfolioHolding>[] = [
 const Portfolio: React.FC<PortfolioProps> = ({ walletAddress }) => {
   const toast = useToast();
   const [holdings, setHoldings] = useState<PortfolioHolding[]>([]);
-  const [error, setError] = useState<ApiError | null>(null);
+  const [error, setError] = useState<ApiError | ValidationError | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   const { state: urlState, setSearch, setSort, setPage, setPageSize, setFilters, reset } = useUrlState<{ status: string, search: string }>({
@@ -142,7 +144,10 @@ const Portfolio: React.FC<PortfolioProps> = ({ walletAddress }) => {
       setIsLoading(true);
 
       try {
-        const response = await getPortfolioHoldings();
+        const response = await getPortfolioHoldings({
+          walletAddress,
+          status: urlState.filters.status || "all",
+        });
         if (!isMounted) {
           return;
         }
@@ -152,12 +157,20 @@ const Portfolio: React.FC<PortfolioProps> = ({ walletAddress }) => {
         if (!isMounted) {
           return;
         }
-        const nextError = normalizeApiError(unknownError);
-        setError(nextError);
-        toast.error({
-          title: "Portfolio sync failed",
-          description: nextError.userMessage,
-        });
+        if (isValidationError(unknownError)) {
+          setError(unknownError);
+          toast.error({
+            title: "Validation failed",
+            description: unknownError.userMessage,
+          });
+        } else {
+          const nextError = normalizeApiError(unknownError);
+          setError(nextError);
+          toast.error({
+            title: "Portfolio sync failed",
+            description: nextError.userMessage,
+          });
+        }
       } finally {
         if (isMounted) {
           setIsLoading(false);
@@ -170,7 +183,7 @@ const Portfolio: React.FC<PortfolioProps> = ({ walletAddress }) => {
     return () => {
       isMounted = false;
     };
-  }, [toast, walletAddress]);
+  }, [toast, walletAddress, urlState.filters.status]);
 
   const filteredHoldings = React.useMemo(() => {
     if (!urlState.filters.status || urlState.filters.status === "all") {
@@ -210,14 +223,32 @@ const Portfolio: React.FC<PortfolioProps> = ({ walletAddress }) => {
 
   return (
     <div className="glass-panel" style={{ padding: "32px" }}>
-      <header style={{ textAlign: "center", marginBottom: "48px" }}>
-        <h1 style={{ fontSize: "2.5rem", marginBottom: "16px" }}>
-          Your <span className="text-gradient">Portfolio</span>
-        </h1>
-        <p style={{ color: "var(--text-secondary)", fontSize: "1.1rem" }}>
-          Overview of your deposited real-world assets.
-        </p>
-      </header>
+      <PageHeader
+        title={
+          <>
+            Your <span className="text-gradient">Portfolio</span>
+          </>
+        }
+        description="Overview of your deposited real-world assets."
+        breadcrumbs={[
+          { label: "Home", href: "/" },
+          { label: "Portfolio" },
+        ]}
+        statusChips={
+          walletAddress
+            ? [
+                {
+                  label: `${holdings.length} Holdings`,
+                  variant: "cyan" as const,
+                },
+                {
+                  label: isLoading ? "Syncing..." : "Live",
+                  variant: (isLoading ? "warning" : "success") as const,
+                },
+              ]
+            : undefined
+        }
+      />
 
       {!walletAddress ? (
         <div style={{ textAlign: "center", padding: "48px" }}>

@@ -45,7 +45,7 @@ export function useUrlState<TFilters extends Record<string, string>>(
       Object.keys(config.defaultFilters).forEach((key) => {
         const val = searchParams.get(key);
         if (val !== null) {
-          (filters as any)[key] = val;
+          (filters as Record<string, string>)[key] = val;
         }
       });
     }
@@ -80,7 +80,7 @@ export function useUrlState<TFilters extends Record<string, string>>(
 
           if (updates.filters !== undefined) {
             Object.keys(updates.filters).forEach((key) => {
-              const val = (updates.filters as any)[key];
+              const val = (updates.filters as Record<string, string>)[key];
               if (val !== undefined && val !== null && val !== "") {
                 next.set(key, String(val));
               } else {
