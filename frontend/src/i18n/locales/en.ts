@@ -63,4 +63,18 @@ export const en = {
     next: "Next",
     sortBy: "Sort by",
   },
+  refresh: {
+    live: "Live",
+    stopped: "Stopped",
+    pause: "Pause",
+    resume: "Resume",
+    refreshNow: "Refresh",
+    refreshing: "Refreshing...",
+    justNow: "Just now",
+    oneMinuteAgo: "1 min ago",
+    minutesAgo: "min ago",
+    pausedHidden: "Paused (tab hidden)",
+    pausedOffline: "Paused (offline)",
+    pausedManual: "Paused",
+  },
 } as const;
