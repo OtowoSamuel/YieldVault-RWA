@@ -508,6 +508,99 @@ button {
   font-size: var(--text-sm);
 }
 
+.copy-field {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.copy-field-value {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-glass);
+  color: var(--text-primary);
+}
+
+[data-theme='light'] .copy-field-value {
+  background: rgba(15, 23, 42, 0.04);
+}
+
+.copy-field-value-mono {
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace;
+  font-size: 0.78rem;
+}
+
+.copy-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.copy-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  color: var(--text-secondary);
+  background: rgba(255, 255, 255, 0.04);
+  transition: color 0.2s ease, border-color 0.2s ease, background 0.2s ease,
+    transform 0.2s ease;
+  flex-shrink: 0;
+}
+
+[data-theme='light'] .copy-button {
+  background: rgba(15, 23, 42, 0.04);
+}
+
+.copy-button:hover {
+  color: var(--accent-cyan);
+  border-color: var(--border-glass-glow);
+  transform: translateY(-1px);
+}
+
+.copy-button:focus-visible {
+  outline: 2px solid var(--accent-cyan);
+  outline-offset: 2px;
+}
+
+.copy-button[data-status='success'] {
+  color: var(--accent-cyan);
+  border-color: rgba(0, 240, 255, 0.28);
+}
+
+.copy-button[data-status='error'] {
+  color: var(--text-error);
+  border-color: var(--border-error);
+}
+
+.copy-feedback {
+  min-width: 72px;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.copy-feedback.is-visible {
+  opacity: 1;
+}
+
+.copy-feedback[data-status='success'] {
+  color: var(--accent-cyan);
+}
+
+.copy-feedback[data-status='error'] {
+  color: var(--text-error);
+}
+
 .sr-only {
   position: absolute;
   width: 1px;
@@ -895,4 +988,125 @@ button {
     right: 16px;
     width: auto;
   }
+
+  /* Settings page mobile overrides */
+  .settings-locale-grid {
+    grid-template-columns: 1fr !important;
+  }
 }
+
+/* ── Compact Mode ───────────────────────────────────────────────── */
+.compact-mode .glass-panel {
+  padding: 16px 20px;
+}
+
+.compact-mode .data-table th,
+.compact-mode .data-table td {
+  padding: 10px 14px;
+}
+
+/* Page Header Component */
+.page-header {
+  position: relative;
+}
+
+.page-header-breadcrumbs ol {
+  margin: 0;
+  padding: 0;
+}
+
+.page-header-title-row {
+  min-height: 3rem;
+}
+
+.page-header-actions {
+  animation: fade-in 0.3s ease-out;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Mobile responsiveness for PageHeader */
+@media (max-width: 768px) {
+  .page-header {
+    text-align: left !important;
+  }
+
+  .page-header-breadcrumbs {
+    justify-content: flex-start !important;
+  }
+
+  .page-header-title-row {
+    flex-direction: column;
+    align-items: flex-start !important;
+    justify-content: flex-start !important;
+  }
+
+  .page-header-title-row h1 {
+    font-size: 2rem !important;
+    justify-content: flex-start !important;
+  }
+
+  .page-header-chips {
+    justify-content: flex-start !important;
+  }
+
+  .page-header p {
+    text-align: left;
+    max-width: none !important;
+    margin: 0 !important;
+  }
+
+  .page-header-actions {
+    width: 100%;
+    justify-content: flex-start !important;
+  }
+
+  .page-header-actions .btn {
+    flex: 1 1 auto;
+    min-width: 120px;
+  }
+}
+
+@media (max-width: 480px) {
+  .page-header-title-row h1 {
+    font-size: 1.75rem !important;
+  }
+
+  .page-header p {
+    font-size: 1rem !important;
+  }
+
+  .page-header-breadcrumbs {
+    font-size: 0.85rem !important;
+  }
+
+  .page-header-actions .btn {
+    width: 100%;
+    flex: 1 1 100%;
+  }
+}
+.compact-mode .data-table th,
+.compact-mode .data-table td {
+  padding: 10px 14px;
+}
+
+.compact-mode .data-table-pagination {
+  padding: 12px 14px;
+}
+
+/* ── Settings page ──────────────────────────────────────────────── */
+.settings-section-divider {
+  height: 1px;
+  background: var(--border-glass);
+  margin: 16px 0;
+}
+
