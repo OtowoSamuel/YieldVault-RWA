@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { isAllowed, setAllowed, getAddress } from '@stellar/freighter-api';
+import React, { useState, useEffect } from "react";
+import { setAllowed } from "@stellar/freighter-api";
 import { Loader2, LogOut, Wallet } from './icons';
 import { hasCustomRpcConfig, networkConfig } from '../config/network';
 import { useToast } from '../context/ToastContext';
 import CopyButton from './CopyButton';
+import { discoverConnectedAddress } from "../lib/stellarAccount";
 
 interface WalletConnectProps {
     walletAddress: string | null;
@@ -16,36 +17,46 @@ const WalletConnect: React.FC<WalletConnectProps> = ({ walletAddress, onConnect,
     const toast = useToast();
 
     useEffect(() => {
-        const checkConnection = async () => {
-            try {
-                const allowed = await isAllowed();
-                if (allowed.isAllowed) {
-                    const userInfo = await getAddress();
-                    if (userInfo.address) {
-                        onConnect(userInfo.address);
-                    }
-                }
-            } catch (e) {
-                console.error("Error checking Freighter connection:", e);
+        let mounted = true;
+
+        const syncConnection = async () => {
+            const discoveredAddress = await discoverConnectedAddress();
+            if (!mounted) return;
+
+            if (discoveredAddress) {
+                onConnect(discoveredAddress);
+                return;
+            }
+
+            if (walletAddress) {
+                onDisconnect();
+                toast.info({
+                    title: "Wallet disconnected",
+                    description: "Freighter is no longer connected to this session.",
+                });
             }
         };
-        checkConnection();
-    }, [onConnect]);
+
+        syncConnection();
+        const interval = window.setInterval(syncConnection, 10000);
+
+        return () => {
+            mounted = false;
+            window.clearInterval(interval);
+        };
+    }, [onConnect, onDisconnect, toast, walletAddress]);
 
     const handleConnect = async () => {
         setIsConnecting(true);
         try {
             await setAllowed();
-            const allowed = await isAllowed();
-            if (allowed.isAllowed) {
-                const userInfo = await getAddress();
-                if (userInfo.address) {
-                    onConnect(userInfo.address);
-                    toast.success({
-                        title: "Wallet connected",
-                        description: "Freighter is now connected to your YieldVault session.",
-                    });
-                }
+            const discoveredAddress = await discoverConnectedAddress();
+            if (discoveredAddress) {
+                onConnect(discoveredAddress);
+                toast.success({
+                    title: "Wallet connected",
+                    description: "Freighter is now connected to your YieldVault session.",
+                });
             } else {
                 toast.warning({
                     title: "Wallet permission required",

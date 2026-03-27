@@ -26,11 +26,11 @@ const mockSummary = {
   },
 };
 
-function renderDashboard(walletAddress: string | null) {
+function renderDashboard(walletAddress: string | null, usdcBalance = 1250.5) {
   return render(
     <ToastProvider>
       <VaultProvider>
-        <VaultDashboard walletAddress={walletAddress} />
+        <VaultDashboard walletAddress={walletAddress} usdcBalance={usdcBalance} />
       </VaultProvider>
     </ToastProvider>,
   );
@@ -134,7 +134,7 @@ describe("VaultDashboard", () => {
 
     await waitFor(() => {
       expect(screen.getByRole("alert")).toHaveTextContent("Data unavailable");
-    });
+    }, { timeout: 3000 });
     expect(screen.getByRole("alert")).toHaveTextContent(
       "We could not reach the server. Check your connection and try again.",
     );

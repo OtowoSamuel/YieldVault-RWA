@@ -3,9 +3,10 @@ import VaultDashboard from "../components/VaultDashboard";
 
 interface HomeProps {
   walletAddress: string | null;
+  usdcBalance: number;
 }
 
-const Home: React.FC<HomeProps> = ({ walletAddress }) => {
+const Home: React.FC<HomeProps> = ({ walletAddress, usdcBalance }) => {
   return (
     <>
       <header style={{ textAlign: "center", marginBottom: "48px" }}>
@@ -29,7 +30,7 @@ const Home: React.FC<HomeProps> = ({ walletAddress }) => {
         </p>
       </header>
 
-      <VaultDashboard walletAddress={walletAddress} />
+      <VaultDashboard walletAddress={walletAddress} usdcBalance={usdcBalance} />
     </>
   );
 };

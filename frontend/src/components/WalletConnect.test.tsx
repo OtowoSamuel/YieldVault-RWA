@@ -1,6 +1,6 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import type { ComponentProps } from 'react';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import WalletConnect from './WalletConnect';
 import * as freighter from '@stellar/freighter-api';
 import { ToastProvider } from '../context/ToastContext';
@@ -27,6 +27,11 @@ describe('WalletConnect', () => {
 
     beforeEach(() => {
         vi.clearAllMocks();
+        vi.useRealTimers();
+    });
+
+    afterEach(() => {
+        vi.useRealTimers();
     });
 
     it('renders the connect button when no wallet is connected', async () => {
@@ -93,5 +98,31 @@ describe('WalletConnect', () => {
         fireEvent.click(disconnectButton);
 
         expect(mockOnDisconnect).toHaveBeenCalled();
+    });
+
+    it('handles wallet disconnects gracefully during polling', async () => {
+        vi.useFakeTimers();
+        mockedFreighter.isAllowed
+            .mockResolvedValueOnce({ isAllowed: true })
+            .mockResolvedValueOnce({ isAllowed: false });
+        mockedFreighter.getAddress.mockResolvedValue({ address: 'GABC123' });
+
+        render(
+            <WalletConnectWrapper
+                walletAddress="GABC123"
+                onConnect={mockOnConnect}
+                onDisconnect={mockOnDisconnect}
+            />
+        );
+
+        await waitFor(() => {
+            expect(mockOnConnect).toHaveBeenCalledWith('GABC123');
+        });
+
+        await vi.advanceTimersByTimeAsync(10000);
+
+        await waitFor(() => {
+            expect(mockOnDisconnect).toHaveBeenCalled();
+        });
     });
 });
