@@ -15,6 +15,8 @@ import "./index.css";
 import { KeyboardShortcutProvider } from "./context/KeyboardShortcutContext";
 import Navbar from "./components/Navbar";
 import ShortcutHelpModal from "./components/ShortcutHelpModal";
+import { FeatureGate } from "./components/FeatureGate";
+import { FeatureFlagProvider } from "./context/FeatureFlagContext";
 import "./index.css";
 
 import * as Sentry from "@sentry/react";
@@ -174,6 +176,14 @@ function AppContent() {
                   />
                 }
               />
+              <Route
+                path="/analytics"
+                element={
+                  <FeatureGate flag="ANALYTICS_PAGE">
+                    <Analytics />
+                  </FeatureGate>
+                }
+              />
               <Route path="/analytics" element={<Analytics />} />
               <Route path="/settings" element={<div>Settings Page</div>} />
               <Route path="/ui-kit" element={<UIPreview />} />
@@ -190,13 +200,15 @@ function AppContent() {
 function App() {
   return (
     <Sentry.ErrorBoundary fallback={<AppErrorFallback />} showDialog>
-      <ThemeProvider>
-        <VaultProvider>
-          <Router>
-            <AppContent />
-          </Router>
-        </VaultProvider>
-      </ThemeProvider>
+      <FeatureFlagProvider>
+        <ThemeProvider>
+          <VaultProvider>
+            <Router>
+              <AppContent />
+            </Router>
+          </VaultProvider>
+        </ThemeProvider>
+      </FeatureFlagProvider>
     </Sentry.ErrorBoundary>
   );
 }
